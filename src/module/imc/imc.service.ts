@@ -1,6 +1,3 @@
-// // src/module/imc/imc.service.ts
-// import { Injectable, Optional } from "@nestjs/common";
-// import { CalcularImcDto } from "./dto/calcular-imc-dto";
 
 export interface ImcRecord {
   id?: number;
@@ -16,35 +13,6 @@ export abstract class ImcStore {
   abstract save(rec: ImcRecord): Promise<ImcRecord>;
   abstract list(params?: { from?: Date; to?: Date; userId?: string }): Promise<ImcRecord[]>;
 }
-
-// @Injectable()
-// export class ImcService {
-//   constructor(@Optional() private readonly store?: ImcStore) {}
-
-//   calcularImc(data: CalcularImcDto, userId?: string) { // 👈 opcional
-//     const { altura, peso } = data;
-
-//     if (!(peso > 0) || peso >= 500) throw new Error('Valores inválidos: peso debe ser > 0 y < 500');
-//     if (!(altura > 0) || altura >= 3) throw new Error('Valores inválidos: altura debe ser > 0 y < 3');
-
-//     const imc = Number((peso / (altura * altura)).toFixed(2));
-//     const categoria =
-//       imc < 18.5 ? 'Bajo peso' :
-//       imc < 25   ? 'Normal'    :
-//       imc < 30   ? 'Sobrepeso' : 'Obeso';
-
-//     if (this.store) {
-//       this.store.save({ peso, altura, imc, categoria, fecha: new Date(), userId });
-//     }
-//     return { imc, categoria };
-//   }
-
-//   async historial(params?: { from?: Date; to?: Date; userId?: string }) {
-//     if (!this.store) return [];
-//     const rows = await this.store.list(params);
-//     return rows.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
-//   }
-// }
 
 import { Inject, Injectable } from '@nestjs/common';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
