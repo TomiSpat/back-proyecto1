@@ -9,7 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // 👈 habilita variables de entorno en toda la app
+      isGlobal: true, 
     }),
 
     TypeOrmModule.forRootAsync({
@@ -27,10 +27,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           database: configService.get<string>('DB_DATABASE'),
           schema: configService.get<string>('DB_SCHEMA'),
           entities: entities,
-          synchronize: configService.get<string>('DB_SYNC') === 'true', // mejor controlarlo por .env
+          synchronize: configService.get<string>('DB_SYNC') === 'true', 
           ssl: isSSL
             ? {
-                rejectUnauthorized: false, // 👈 útil para Railway, Supabase, Heroku
+                rejectUnauthorized: false, 
               }
             : undefined,
         };

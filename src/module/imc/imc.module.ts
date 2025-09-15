@@ -8,8 +8,10 @@ import { ImcRepository } from './imc.repository';
 @Module({
   imports: [TypeOrmModule.forFeature([ImcEntity])],
   controllers: [ImcController],
-  providers: [ImcService,
+  providers: [
+    ImcService, 
     {
+      //se define el uso de la interfaz IImcRepository
       provide: 'IImcRepository',
       useClass: ImcRepository
     }
