@@ -1,8 +1,5 @@
-// import { ImcEntity } from '../modules/imc/entities/imc.entity';
-// import { ImcRecord } from '../modules/imc/imc.service';
-
 import { ImcEntity } from "src/module/imc/entities/imc.entity";
-import { ImcRecord } from "src/module/imc/imc.service";
+import { ImcRecord } from "src/module/imc/interface/IImcRecord";
 
 export class MapperUtil {
   static toImcRecord(entity: ImcEntity): ImcRecord {

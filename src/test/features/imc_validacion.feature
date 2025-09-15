@@ -15,7 +15,7 @@ Feature: CR-001 - Validación avanzada de entradas (peso/altura)
   @invalido
   Scenario Outline: Peso inválido (<=0 o >=500)
     When ingreso un peso de <peso> kg y una altura de 1.70 m
-    Then debo ver el error "Valores inválidos: peso debe ser > 0 y < 500"
+    Then debo ver el error "Valores inválidos: peso debe ser mayor a 0 y menor a 500"
     Examples:
       | peso |
       | 0    |
@@ -26,7 +26,7 @@ Feature: CR-001 - Validación avanzada de entradas (peso/altura)
   @invalido
   Scenario Outline: Altura inválida (<=0 o >=3)
     When ingreso un peso de 70 kg y una altura de <altura> m
-    Then debo ver el error "Valores inválidos: altura debe ser > 0 y < 3"
+    Then debo ver el error "Valores inválidos: altura debe ser mayor a 0 y menor a 3"
     Examples:
       | altura |
       | 0      |

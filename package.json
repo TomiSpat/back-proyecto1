@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "dev": "nest start --watch",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -19,7 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "bdd": "cucumber-js --config cucumber.js",
-    "bdd:cov": "nyc --reporter=text --reporter=text-summary --reporter=html --reporter=lcov cucumber-js --config cucumber.js"
+    "bdd:cov": "nyc --reporter=text --reporter=text-summary --reporter=html --reporter=lcov cucumber-js --config cucumber.js",
+    "preinstall": "npx only-allow yarn"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -58,6 +60,7 @@
     "jest": "^29.7.0",
     "jest-cucumber": "^4.5.0",
     "nyc": "^17.1.0",
+    "only-allow": "^1.2.1",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
@@ -100,7 +103,8 @@
       "src/module/imc/imc.repository.ts",
       "src/module/imc/dto/guardar-imc-dto.ts",
       "src/module/imc/dto/update-imc-dto.ts",
-      "src/module/imc/entities/imc.entity.ts"
+      "src/module/imc/entities/imc.entity.ts",
+      "src/common/pipes/parse-date.pipe.ts"
     ],
     "all": true,
     "cache": true,
