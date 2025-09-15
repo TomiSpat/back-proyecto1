@@ -19,6 +19,8 @@ import {
 import { ImcService } from './imc.service';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
+import { ValidarImcPipe } from 'src/common/pipes/validar-imc-pipe';
+import { ImcRecord } from './interface/IImcRecord';
 // Si usás un pipe de dominio para validar alturas/pesos:
 // import { ValidarImcPipe } from '../../common/pipes/validar-imc-pipe';
 
@@ -85,8 +87,8 @@ export class ImcController {
   })
   async calcular(
     // Si usás pipe de dominio, descomentá:
-    // @Body(ValidarImcPipe) dto: CalcularImcDto,
-    @Body() dto: CalcularImcDto,
+    @Body(ValidarImcPipe) dto: CalcularImcDto,
+    // @Body() dto: CalcularImcDto,
   ) {
     return this.imcService.calcularImc(dto);
   }
@@ -151,9 +153,10 @@ export class ImcController {
     @Query('take') take?: number,
     @Query('order') order?: 'ASC' | 'DESC',
     @Query('categoria') categoria?: string,
-    @Query('from', new ParseDatePipe()) fechaInicio?: Date,
-    @Query('to',   new ParseDatePipe()) fechaFin?: Date,
-  ) {
+    @Query('from') fechaInicio?: Date,
+    @Query('to') fechaFin?: Date,
+  ): Promise<ImcRecord[]> {
+
     return this.imcService.historial(skip, take, order, categoria, fechaInicio, fechaFin);
   }
 }
