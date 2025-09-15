@@ -1,19 +1,3 @@
-
-export interface ImcRecord {
-  id?: number;
-  peso: number;
-  altura: number;
-  imc: number;
-  categoria: string;
-  fecha: Date;
-  userId?: string | null; // 👈 sin null
-}
-
-export abstract class ImcStore {
-  abstract save(rec: ImcRecord): Promise<ImcRecord>;
-  abstract list(params?: { from?: Date; to?: Date; userId?: string }): Promise<ImcRecord[]>;
-}
-
 import { Inject, Injectable } from '@nestjs/common';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { GuardarImcDto } from './dto/guardar-imc-dto';
