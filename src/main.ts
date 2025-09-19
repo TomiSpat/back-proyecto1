@@ -6,14 +6,12 @@ import * as dotenv from 'dotenv';
 dotenv.config(); // Carga variables de entorno desde .env lo antes posible
 
 async function bootstrap() {
-  // Crear app Nest (podés pasar opciones como bufferLogs si querés centralizar logs)
   const app = await NestFactory.create(AppModule);
 
   // ---- CORS ----
-  // Permití origen/es por ENV (si no hay, usa el que pusiste o '*')
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') ?? 'https://front-proyecto1.vercel.app',
-    credentials: true, // habilita cookies/autenticación cross-site si hiciera falta
+    credentials: true, 
   });
 
 
@@ -33,7 +31,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('IMC Calculator API')             // Título visible en Swagger UI
     .setDescription('API para calcular y guardar IMC') // Descripción
-    .setVersion('1.0')                           // Versión de tu API
+    .setVersion('1.0')                           // Versión
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig, {});
@@ -47,7 +45,7 @@ async function bootstrap() {
  
   // ---- Arranque del servidor ----
   const port = Number(process.env.PORT) || 3000;
-  await app.listen(port); // en entornos PaaS a veces conviene: ('0.0.0.0')
+  await app.listen(port);
   console.log(`API levantada en http://localhost:${port}`);
   console.log(`Swagger UI en http://localhost:${port}/docs`);
   console.log(`OpenAPI JSON en http://localhost:${port}/docs-json`);

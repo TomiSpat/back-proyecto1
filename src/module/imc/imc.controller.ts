@@ -21,8 +21,6 @@ import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
 import { ValidarImcPipe } from 'src/common/pipes/validar-imc-pipe';
 import { ImcRecord } from './interface/IImcRecord';
-// Si usás un pipe de dominio para validar alturas/pesos:
-// import { ValidarImcPipe } from '../../common/pipes/validar-imc-pipe';
 
 @ApiTags('IMC')
 @Controller('imc')
@@ -49,7 +47,6 @@ export class ImcController {
   })
   @ApiCreatedResponse({
     description: 'IMC calculado correctamente',
-    // Lo documento inline para reflejar lo que realmente devolvés (entity/record completo)
     schema: {
       type: 'object',
       properties: {
@@ -86,13 +83,11 @@ export class ImcController {
     },
   })
   async calcular(
-    // Si usás pipe de dominio, descomentá:
     @Body(ValidarImcPipe) dto: CalcularImcDto,
-    // @Body() dto: CalcularImcDto,
   ) {
     return this.imcService.calcularImc(dto);
   }
-
+  
   // -------------------------
   // GET /imc/historial
   // -------------------------
