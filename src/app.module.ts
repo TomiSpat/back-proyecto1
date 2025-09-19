@@ -16,10 +16,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const isSSL = configService.get<string>('DB_SSL') === 'true';
+        // const isSSL = configService.get<string>('DB_SSL') === 'true';
 
         return {
-          type: 'postgres',
+          type: 'mysql',
           host: configService.get<string>('DB_HOST'),
           port: Number(configService.get<string>('DB_PORT')),
           username: configService.get<string>('DB_USERNAME'),
@@ -28,11 +28,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           schema: configService.get<string>('DB_SCHEMA'),
           entities: entities,
           synchronize: configService.get<string>('DB_SYNC') === 'true', 
-          ssl: isSSL
-            ? {
-                rejectUnauthorized: false, 
-              }
-            : undefined,
+          // ssl: isSSL
+          //   ? {
+          //       rejectUnauthorized: false, 
+          //     }
+          //   : undefined,
         };
       },
     }),
