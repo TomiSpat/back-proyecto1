@@ -1,214 +1,284 @@
-// import { BeforeAll, AfterAll, Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber';
-// import { expect } from 'expect';
-// import { INestApplication, ValidationPipe } from '@nestjs/common';
-// import { Test } from '@nestjs/testing';
-// import { ImcService } from 'src/module/imc/imc.service';
-// import { IImcRepository } from 'src/module/imc/interface/IImcRepository';
-// import { ImcEntity } from 'src/module/imc/entities/imc.entity';
+import { BeforeAll, AfterAll, Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber';
+import { expect } from 'expect';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { ImcService } from 'src/module/imc/imc.service';
+import { IImcRepository } from 'src/module/imc/interface/IImcRepository';
+import { ImcEntity } from 'src/module/imc/entities/imc.entity';
+import { ImcMetric } from 'src/module/imc/interface/IImcMetric';
+import { ImcWeightMetric } from 'src/module/imc/interface/IImcWeightMetric';
 
-// // ---------- Repo en memoria que implementa IImcRepository ----------
-// class InMemoryImcRepository implements IImcRepository {
-//   private data: ImcEntity[] = [];
-//   private id = 1;
+class InMemoryImcRepository implements IImcRepository {
+  private data: ImcEntity[] = [];
+  private sequence = 1;
 
-//   clear() {
-//     this.data = [];
-//     this.id = 1;
-//   }
+  clear() {
+    this.data = [];
+    this.sequence = 1;
+  }
 
-//   // Inserta un registro “a mano” (para escenarios Given con fechas específicas)
-//   pushFixed(row: Omit<ImcEntity, 'id'>) {
-//     const rec: ImcEntity = { ...row, id: this.id++ };
-//     this.data.push(rec);
-//     return rec;
-//   }
+  pushFixed(row: Omit<ImcEntity, 'id'>) {
+    const entity: ImcEntity = { ...row, id: this.sequence++ };
+    this.data.push(entity);
+    return entity;
+  }
 
-//   async findBy(
-//     skip = 0,
-//     take = Number.MAX_SAFE_INTEGER,
-//     order: 'ASC' | 'DESC' = 'DESC',
-//     categoria?: string,
-//     fechaInicio?: Date,
-//     fechaFin?: Date,
-//   ): Promise<{ data: ImcEntity[]; total: number }> {
-//     let rows = [...this.data];
+  async findBy(
+    skip = 0,
+    take = Number.MAX_SAFE_INTEGER,
+    order: 'ASC' | 'DESC' = 'DESC',
+    categoria?: string,
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<{ data: ImcEntity[]; total: number }> {
+    let rows = [...this.data];
 
-//     if (categoria) rows = rows.filter(r => r.categoria === categoria);
-//     if (fechaInicio) rows = rows.filter(r => r.fecha >= fechaInicio);
-//     if (fechaFin) rows = rows.filter(r => r.fecha <= fechaFin);
+    if (categoria) {
+      rows = rows.filter((row) => row.categoria === categoria);
+    }
+    if (fechaInicio) {
+      rows = rows.filter((row) => row.fecha >= fechaInicio);
+    }
+    if (fechaFin) {
+      rows = rows.filter((row) => row.fecha <= fechaFin);
+    }
 
-//     rows.sort((a, b) =>
-//       order === 'ASC'
-//         ? a.fecha.getTime() - b.fecha.getTime()
-//         : b.fecha.getTime() - a.fecha.getTime(),
-//     );
+    rows.sort((a, b) =>
+      order === 'ASC'
+        ? a.fecha.getTime() - b.fecha.getTime()
+        : b.fecha.getTime() - a.fecha.getTime(),
+    );
 
-//     const total = rows.length;
-//     const sliced = rows.slice(skip, skip + take);
-//     return { data: sliced, total };
-//   }
+    const total = rows.length;
+    const sliced = rows.slice(skip, skip + take);
+    return { data: sliced, total };
+  }
 
-//   async findById(id: number): Promise<ImcEntity | null> {
-//     return this.data.find(r => r.id === id) ?? null;
-//   }
+  async findById(id: number): Promise<ImcEntity | null> {
+    return this.data.find((row) => row.id === id) ?? null;
+  }
 
-//   // Nota: tu service llama create(...) con GuardarImcDto (peso,altura,imc,categoria,fecha)
-//   // aunque la interfaz dice CalcularImcDto. Permitimos "any" para compatibilidad.
-//   async create(data: any): Promise<ImcEntity> {
-//     const rec: ImcEntity = {
-//       id: this.id++,
-//       peso: Number(data.peso),
-//       altura: Number(data.altura),
-//       imc: Number(data.imc),
-//       categoria: data.categoria,
-//       fecha: data.fecha instanceof Date ? data.fecha : new Date(data.fecha),
-//       userId: data.userId ?? null,
-//     };
-//     this.data.push(rec);
-//     return rec;
-//   }
+  async create(data: any): Promise<ImcEntity> {
+    const entity: ImcEntity = {
+      id: this.sequence++,
+      peso: Number(data.peso),
+      altura: Number(data.altura),
+      imc: Number(data.imc),
+      categoria: data.categoria,
+      fecha: data.fecha instanceof Date ? data.fecha : new Date(data.fecha),
+    };
+    this.data.push(entity);
+    return entity;
+  }
 
-//   async update(): Promise<ImcEntity | null> {
-//     return null; // no se usa en estos tests
-//   }
+  async update(): Promise<ImcEntity | null> {
+    return null;
+  }
 
-//   async delete(): Promise<ImcEntity | null> {
-//     return null; // no se usa en estos tests
-//   }
-// }
+  async delete(): Promise<ImcEntity | null> {
+    return null;
+  }
 
-// // ---------- Estado de test ----------
-// let app: INestApplication;
-// let service: ImcService;
-// let repo: InMemoryImcRepository;
-// let listado: Array<{
-//   id?: number;
-//   peso: number;
-//   altura: number;
-//   imc: number;
-//   categoria: string;
-//   fecha: Date;
-//   userId?: string | null;
-// }> = [];
+  async metricsByCategoria(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    const inRange = this.filterByDate(this.data, fechaInicio, fechaFin);
+    const grouped = new Map<string, ImcEntity[]>();
 
-// setDefaultTimeout(60_000);
+    for (const row of inRange) {
+      const bucket = grouped.get(row.categoria) ?? [];
+      bucket.push(row);
+      grouped.set(row.categoria, bucket);
+    }
 
-// BeforeAll(async () => {
-//   repo = new InMemoryImcRepository();
+    const metrics: ImcMetric[] = [];
 
-//   const moduleRef = await Test.createTestingModule({
-//     providers: [
-//       ImcService,
-//       { provide: 'IImcRepository', useValue: repo },
-//     ],
-//   }).compile();
+    grouped.forEach((rows, categoria) => {
+      const total = rows.length;
+      const promedio = rows.reduce((acc, row) => acc + Number(row.imc), 0) / total;
+      const variance =
+        total === 0
+          ? null
+          : rows.reduce((acc, row) => {
+              const diff = Number(row.imc) - promedio;
+              return acc + diff * diff;
+            }, 0) / total;
+      metrics.push({
+        categoria,
+        total,
+        promedioImc: Number(promedio.toFixed(2)),
+        variacionImc: variance === null ? null : Number(Math.sqrt(variance).toFixed(2)),
+      });
+    });
 
-//   app = moduleRef.createNestApplication();
-//   // Replica tu main.ts
-//   app.useGlobalPipes(
-//     new ValidationPipe({
-//       whitelist: true,
-//       forbidNonWhitelisted: true,
-//       transform: true,
-//       transformOptions: { enableImplicitConversion: true },
-//     }),
-//   );
-//   await app.init();
+    return metrics.sort((a, b) => a.categoria.localeCompare(b.categoria));
+  }
 
-//   service = app.get(ImcService);
-// });
+  async pesoMetrics(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcWeightMetric> {
+    const inRange = this.filterByDate(this.data, fechaInicio, fechaFin);
+    const total = inRange.length;
+    if (!total) {
+      return { total: 0, promedioPeso: null, variacionPeso: null };
+    }
 
-// AfterAll(async () => {
-//   await app?.close();
-// });
+    const promedio = inRange.reduce((acc, row) => acc + Number(row.peso), 0) / total;
+    const variance =
+      inRange.reduce((acc, row) => {
+        const diff = Number(row.peso) - promedio;
+        return acc + diff * diff;
+      }, 0) / total;
 
-// // ---------- Steps ----------
+    return {
+      total,
+      promedioPeso: Number(promedio.toFixed(2)),
+      variacionPeso: Number(Math.sqrt(variance).toFixed(2)),
+    };
+  }
 
-// Given('que tengo un almacenamiento de IMC en memoria inicializado', function () {
-//   repo.clear();
-// });
+  private filterByDate(rows: ImcEntity[], fechaInicio?: Date, fechaFin?: Date): ImcEntity[] {
+    return rows.filter((row) => {
+      if (fechaInicio && row.fecha < fechaInicio) {
+        return false;
+      }
+      if (fechaFin && row.fecha > fechaFin) {
+        return false;
+      }
+      return true;
+    });
+  }
+}
 
-// Given('que tengo el servicio de IMC conectado a ese almacenamiento', function () {
-//   // no-op (ya está inyectado en BeforeAll)
-// });
+let app: INestApplication;
+let service: ImcService;
+let repo: InMemoryImcRepository;
+let listado: Array<{
+  id?: number;
+  peso: number;
+  altura: number;
+  imc: number;
+  categoria: string;
+  fecha: Date;
+}> = [];
 
-// When('calculo IMC para peso {float} y altura {float}', function (peso: number, altura: number) {
-//   // Esto persiste vía repo.create(...) dentro del service
-//   service.calcularImc({ peso, altura } as any);
-// });
+setDefaultTimeout(60_000);
 
-// Then('el historial debe tener {int} registro', async function (n: number) {
-//   listado = await service.historial(); // params opcionales
-//   expect(listado).toHaveLength(n);
-// });
+BeforeAll(async () => {
+  repo = new InMemoryImcRepository();
 
-// Then(
-//   'el último registro debe incluir peso {float}, altura {float}, categoría {string}',
-//   async function (p: number, a: number, cat: string) {
-//     const rows = await service.historial(0, 100, 'DESC'); // aseguramos orden desc
-//     const last = rows[0];
-//     expect(last.peso).toBe(p);
-//     expect(last.altura).toBe(a);
-//     expect(last.categoria).toBe(cat);
-//     const esperado = Number((p / (a * a)).toFixed(2));
-//     expect(last.imc).toBeCloseTo(esperado, 2);
-//   },
-// );
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      ImcService,
+      { provide: 'IImcRepository', useValue: repo },
+    ],
+  }).compile();
 
-// Then('al listar el historial, el primer registro debe ser el más reciente', async function () {
-//   const rows = await service.historial(0, 100, 'DESC');
-//   expect(rows.length).toBeGreaterThanOrEqual(2);
-//   expect(rows[0].fecha.getTime()).toBeGreaterThanOrEqual(rows[1].fecha.getTime());
-// });
+  app = moduleRef.createNestApplication();
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
 
-// Given(
-//   'que existe un cálculo con fecha {string} con categoria {string} en orden {string}',
-//   function (iso: string, cat: string, _ord: string) {
-//     // "orden" se usa al listar, no es campo del registro; lo ignoramos acá
-//     const fecha = new Date(iso);
-//     const peso = 70;
-//     const altura = 1.75;
-//     repo.pushFixed({
-//       peso,
-//       altura,
-//       imc: Number((peso / (altura ** 2)).toFixed(2)),
-//       categoria: cat,
-//       fecha,
-//       userId: 'Usuario prueba',
-//     });
-//   },
-// );
+  await app.init();
+  service = app.get(ImcService);
+});
 
-// Given('que existe un cálculo con fecha {string}', function (iso: string) {
-//   const fecha = new Date(iso);
-//   const peso = 80;
-//   const altura = 1.7;
-//   repo.pushFixed({
-//     peso,
-//     altura,
-//     imc: Number((peso / (altura ** 2)).toFixed(2)),
-//     categoria: 'Normal',
-//     fecha,
-//     // userId: null,
-//   });
-// });
+AfterAll(async () => {
+  await app?.close();
+});
 
-// When('pido el historial entre {string} y {string}', async function (fromIso: string, toIso: string) {
-//   listado = await service.historial(
-//     0,
-//     100,
-//     'ASC',           // pedimos ascendente para facilitar la aserción si quisieras
-//     undefined,       // sin filtrar por categoría
-//     new Date(fromIso),
-//     new Date(toIso),
-//   );
-// });
+Given('que tengo un almacenamiento de IMC en memoria inicializado', function () {
+  repo.clear();
+});
 
-// Then('el historial filtrado debe contener {int} registro', function (n: number) {
-//   expect(listado).toHaveLength(n);
-// });
+Given('que tengo el servicio de IMC conectado a ese almacenamiento', function () {
+  // El servicio ya está conectado al repositorio en memoria
+});
 
-// Then('ese registro debe tener fecha {string}', function (iso: string) {
-//   // service.historial devuelve Date real (no JSON), así que comparamos con toISOString()
-//   expect(listado[0].fecha.toISOString()).toBe(iso);
-// });
+When('calculo IMC para peso {float} y altura {float}', function (peso: number, altura: number) {
+  service.calcularImc({ peso, altura } as any);
+});
+
+Then('el historial debe tener {int} registro', async function (n: number) {
+  listado = await service.historial();
+  expect(listado).toHaveLength(n);
+});
+
+Then('el último registro debe incluir peso {float}, altura {float}, categoría {string}', async function (
+  peso: number,
+  altura: number,
+  categoria: string,
+) {
+  const rows = await service.historial(0, 100, 'DESC');
+  const last = rows[0];
+  expect(last.peso).toBe(peso);
+  expect(last.altura).toBe(altura);
+  expect(last.categoria).toBe(categoria);
+
+  const esperado = Number((peso / (altura * altura)).toFixed(2));
+  expect(last.imc).toBeCloseTo(esperado, 2);
+});
+
+Then('al listar el historial, el primer registro debe ser el más reciente', async function () {
+  const rows = await service.historial(0, 100, 'DESC');
+  expect(rows.length).toBeGreaterThanOrEqual(2);
+  expect(rows[0].fecha.getTime()).toBeGreaterThanOrEqual(rows[1].fecha.getTime());
+});
+
+Given('que existe un cálculo con fecha {string} con categoria {string} en orden {string}', function (
+  iso: string,
+  categoria: string,
+  _orden: string,
+) {
+  const fecha = new Date(iso);
+  const peso = 70;
+  const altura = 1.75;
+
+  repo.pushFixed({
+    peso,
+    altura,
+    imc: Number((peso / (altura * altura)).toFixed(2)),
+    categoria,
+    fecha,
+  });
+});
+
+Given('que existe un cálculo con fecha {string}', function (iso: string) {
+  const fecha = new Date(iso);
+  const peso = 80;
+  const altura = 1.7;
+
+  repo.pushFixed({
+    peso,
+    altura,
+    imc: Number((peso / (altura * altura)).toFixed(2)),
+    categoria: 'Normal',
+    fecha,
+  });
+});
+
+When('pido el historial entre {string} y {string}', async function (fromIso: string, toIso: string) {
+  listado = await service.historial(
+    0,
+    100,
+    'ASC',
+    undefined,
+    new Date(fromIso),
+    new Date(toIso),
+  );
+});
+
+Then('el historial filtrado debe contener {int} registro', function (n: number) {
+  expect(listado).toHaveLength(n);
+});
+
+Then('ese registro debe tener fecha {string}', function (iso: string) {
+  expect(listado[0].fecha.toISOString()).toBe(iso);
+});

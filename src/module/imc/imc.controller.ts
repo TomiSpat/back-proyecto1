@@ -22,6 +22,7 @@ import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
 import { ValidarImcPipe } from 'src/common/pipes/validar-imc-pipe';
 import { ImcRecord } from './interface/IImcRecord';
 import { ImcMetric } from './interface/IImcMetric';
+import { ImcWeightMetric } from './interface/IImcWeightMetric';
 
 @ApiTags('IMC')
 @Controller('imc')
@@ -188,5 +189,34 @@ export class ImcController {
     @Query('to', ParseDatePipe) fechaFin?: Date,
   ): Promise<ImcMetric[]> {
     return this.imcService.metricas(fechaInicio, fechaFin);
+  }
+
+  // -------------------------
+  // GET /imc/metricas/peso
+  // -------------------------
+  @Get('metricas/peso')
+  @ApiOperation({
+    summary: 'Consultar métricas globales de peso',
+    description: 'Entrega el total de registros, junto al promedio y la variación (desviación estándar poblacional) del peso registrado.',
+  })
+  @ApiQuery({ name: 'from', required: false, type: String, example: '2025-09-01', description: 'Fecha desde (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'to',   required: false, type: String, example: '2025-09-12', description: 'Fecha hasta (YYYY-MM-DD)' })
+  @ApiOkResponse({
+    description: 'Métricas globales calculadas correctamente',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number', example: 42 },
+        promedioPeso: { type: 'number', nullable: true, example: 76.3 },
+        variacionPeso: { type: 'number', nullable: true, example: 3.5 },
+      },
+      required: ['total', 'promedioPeso', 'variacionPeso'],
+    },
+  })
+  async metricasPeso(
+    @Query('from', ParseDatePipe) fechaInicio?: Date,
+    @Query('to', ParseDatePipe) fechaFin?: Date,
+  ): Promise<ImcWeightMetric> {
+    return this.imcService.metricasPeso(fechaInicio, fechaFin);
   }
 }
