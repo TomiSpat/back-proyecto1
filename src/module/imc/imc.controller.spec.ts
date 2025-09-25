@@ -16,6 +16,7 @@ describe('ImcController', () => {
           provide: ImcService,
           useValue: {
             calcularImc: jest.fn(),
+            metricas: jest.fn(),
           },
         },
       ],
@@ -36,6 +37,18 @@ describe('ImcController', () => {
     const result = await controller.calcular(dto);
     expect(result).toEqual({ imc: 22.86, categoria: 'Normal' });
     expect(service.calcularImc).toHaveBeenCalledWith(dto);
+  });
+
+  it('should return aggregated metrics', async () => {
+    const metrics = [
+      { categoria: 'Normal', total: 5, promedioImc: 23.4, variacionImc: 1.1 },
+    ];
+    jest.spyOn(service, 'metricas').mockResolvedValue(metrics);
+
+    const result = await controller.metricas(undefined, undefined);
+
+    expect(result).toEqual(metrics);
+    expect(service.metricas).toHaveBeenCalledWith(undefined, undefined);
   });
 
   it('should throw BadRequestException for invalid input', async () => {

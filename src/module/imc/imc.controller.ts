@@ -21,6 +21,7 @@ import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
 import { ValidarImcPipe } from 'src/common/pipes/validar-imc-pipe';
 import { ImcRecord } from './interface/IImcRecord';
+import { ImcMetric } from './interface/IImcMetric';
 
 @ApiTags('IMC')
 @Controller('imc')
@@ -148,10 +149,44 @@ export class ImcController {
     @Query('take') take?: number,
     @Query('order') order?: 'ASC' | 'DESC',
     @Query('categoria') categoria?: string,
-    @Query('from') fechaInicio?: Date,
-    @Query('to') fechaFin?: Date,
+    @Query('from', ParseDatePipe) fechaInicio?: Date,
+    @Query('to', ParseDatePipe) fechaFin?: Date,
   ): Promise<ImcRecord[]> {
 
     return this.imcService.historial(skip, take, order, categoria, fechaInicio, fechaFin);
+  }
+
+  // -------------------------
+  // GET /imc/metricas
+  // -------------------------
+  @Get('metricas')
+  @ApiOperation({
+    summary: 'Consultar métricas agregadas por categoría',
+    description:
+      'Devuelve, para cada categoría, la cantidad de registros, el IMC promedio y la variación (desviación estándar poblacional).',
+  })
+  @ApiQuery({ name: 'from', required: false, type: String, example: '2025-09-01', description: 'Fecha desde (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'to',   required: false, type: String, example: '2025-09-12', description: 'Fecha hasta (YYYY-MM-DD)' })
+  @ApiOkResponse({
+    description: 'Métricas agregadas calculadas correctamente',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          categoria: { type: 'string', example: 'Normal' },
+          total: { type: 'number', example: 12 },
+          promedioImc: { type: 'number', example: 23.45 },
+          variacionImc: { type: 'number', nullable: true, example: 1.72 },
+        },
+        required: ['categoria', 'total', 'promedioImc', 'variacionImc'],
+      },
+    },
+  })
+  async metricas(
+    @Query('from', ParseDatePipe) fechaInicio?: Date,
+    @Query('to', ParseDatePipe) fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    return this.imcService.metricas(fechaInicio, fechaFin);
   }
 }

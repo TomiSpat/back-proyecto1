@@ -1,6 +1,7 @@
 import { CalcularImcDto } from '../dto/calcular-imc-dto';
 import { UpdateImcDto } from '../dto/update-imc-dto';
 import { ImcEntity } from '../entities/imc.entity';
+import { ImcMetric } from './IImcMetric';
 
 export interface IImcRepository {
     findBy(
@@ -15,4 +16,8 @@ export interface IImcRepository {
     create(data: CalcularImcDto): Promise<ImcEntity>;
     update(id: number, data: UpdateImcDto): Promise<ImcEntity | null>;
     delete(id: number): Promise<ImcEntity | null>;
+    metricsByCategoria(
+        fechaInicio?: Date,
+        fechaFin?: Date,
+    ): Promise<ImcMetric[]>;
 }

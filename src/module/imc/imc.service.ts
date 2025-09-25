@@ -2,8 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { GuardarImcDto } from './dto/guardar-imc-dto';
 import { IImcRepository } from './interface/IImcRepository';
-import { InjectRepository } from '@nestjs/typeorm';
 import { MapperUtil } from 'src/common/utils/mapper.util';
+import { ImcMetric } from './interface/IImcMetric';
 
 @Injectable()
 export class ImcService {
@@ -51,6 +51,14 @@ export class ImcService {
     const { data } = await this.imcRepository.findBy(skip, take, order, categoria, fechaInicio, fechaFin);
     
     return data.map(MapperUtil.toImcRecord);
+  }
+
+  async metricas(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    const rows = await this.imcRepository.metricsByCategoria(fechaInicio, fechaFin);
+    return rows.map(MapperUtil.toImcMetric);
   }
 }
 

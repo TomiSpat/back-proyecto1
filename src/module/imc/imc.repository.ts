@@ -5,6 +5,7 @@ import { ImcEntity } from './entities/imc.entity';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { IImcRepository } from './interface/IImcRepository';
 import { UpdateImcDto } from './dto/update-imc-dto';
+import { ImcMetric } from './interface/IImcMetric';
 
 @Injectable()
 export class ImcRepository implements IImcRepository {
@@ -91,6 +92,35 @@ export class ImcRepository implements IImcRepository {
     } catch (error) {
       throw new InternalServerErrorException('Error al eliminar el Imc');
 
+    }
+  }
+
+  async metricsByCategoria(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    try {
+      const qb = this.repo
+        .createQueryBuilder('imc')
+        .select('imc.categoria', 'categoria')
+        .addSelect('COUNT(*)', 'total')
+        .addSelect('AVG(imc.imc)', 'promedioImc')
+        .addSelect('STDDEV_POP(imc.imc)', 'variacionImc');
+
+      if (fechaInicio) {
+        qb.andWhere('imc.fecha >= :fechaInicio', { fechaInicio });
+      }
+
+      if (fechaFin) {
+        qb.andWhere('imc.fecha <= :fechaFin', { fechaFin });
+      }
+
+      return qb
+        .groupBy('imc.categoria')
+        .orderBy('imc.categoria', 'ASC')
+        .getRawMany();
+    } catch (error) {
+      throw new InternalServerErrorException('Error al obtener métricas de IMC');
     }
   }
 }
