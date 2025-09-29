@@ -1,43 +1,32 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
-import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { entities } from './entities';
 import { ImcModule } from './module/imc/imc.module';
 import { AppController } from './app.controller';
-import { entities } from './entities';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true, 
-    }),
-
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        // const isSSL = configService.get<string>('DB_SSL') === 'true';
-
+      useFactory: (config: ConfigService) => {
+        const url = config.get<string>('MONGODB_URI');
         return {
-          type: 'mysql',
-          host: configService.get<string>('DB_HOST'),
-          port: Number(configService.get<string>('DB_PORT')),
-          username: configService.get<string>('DB_USERNAME'),
-          password: configService.get<string>('DB_PASSWORD'),
-          database: configService.get<string>('DB_DATABASE'),
-          schema: configService.get<string>('DB_SCHEMA'),
+          type: 'mongodb' as const,
+          url,
+          database: config.get<string>('MONGODB_DB'), // Nombre de la base de datos
+          useUnifiedTopology: true,     // opcional / según versión
+          synchronize: config.get<string>('DB_SYNC') === 'true',
           entities: entities,
-          synchronize: configService.get<string>('DB_SYNC') === 'true', 
-          // ssl: isSSL
-          //   ? {
-          //       rejectUnauthorized: false, 
-          //     }
-          //   : undefined,
+          // logging: true,
         };
       },
     }),
-
-    TypeOrmModule.forFeature(entities),
+    TypeOrmModule.forFeature(entities), // sigue exponiendo repos
     ImcModule,
   ],
   controllers: [AppController],

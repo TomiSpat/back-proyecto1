@@ -2,8 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CalcularImcDto } from './dto/calcular-imc-dto';
 import { GuardarImcDto } from './dto/guardar-imc-dto';
 import { IImcRepository } from './interface/IImcRepository';
-import { InjectRepository } from '@nestjs/typeorm';
 import { MapperUtil } from 'src/common/utils/mapper.util';
+import { ImcMetric } from './interface/IImcMetric';
+import { ImcWeightMetric } from './interface/IImcWeightMetric';
 
 @Injectable()
 export class ImcService {
@@ -12,7 +13,7 @@ export class ImcService {
     private readonly imcRepository: IImcRepository) { }
 
 
-  calcularImc(data: CalcularImcDto, userId: string | null = null) {
+  calcularImc(data: CalcularImcDto) {
     const { altura, peso } = data;
 
     const imc = peso / (altura * altura);
@@ -48,9 +49,24 @@ export class ImcService {
     fechaInicio?: Date,
     fechaFin?: Date,
     ) {
-    const { data } = await this.imcRepository.findBy(skip, take, order, categoria, fechaInicio, fechaFin);
-    
-    return data.map(MapperUtil.toImcRecord);
+    const { data, total } = await this.imcRepository.findBy(skip, take, order, categoria, fechaInicio, fechaFin);
+
+    return { data: data.map(MapperUtil.toImcRecord), total };
+  }
+
+  async metricas(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    const rows = await this.imcRepository.metricsByCategoria(fechaInicio, fechaFin);
+    return rows.map(MapperUtil.toImcMetric);
+  }
+
+  async metricasPeso(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcWeightMetric> {
+    return this.imcRepository.pesoMetrics(fechaInicio, fechaFin);
   }
 }
 

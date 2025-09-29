@@ -5,22 +5,23 @@ import { Test } from '@nestjs/testing';
 import { ImcService } from 'src/module/imc/imc.service';
 import { IImcRepository } from 'src/module/imc/interface/IImcRepository';
 import { ImcEntity } from 'src/module/imc/entities/imc.entity';
+import { ImcMetric } from 'src/module/imc/interface/IImcMetric';
+import { ImcWeightMetric } from 'src/module/imc/interface/IImcWeightMetric';
+import { ObjectId } from 'mongodb';
 
-// ---------- Repo en memoria que implementa IImcRepository ----------
 class InMemoryImcRepository implements IImcRepository {
   private data: ImcEntity[] = [];
-  private id = 1;
+  private sequence = 1;
 
   clear() {
     this.data = [];
-    this.id = 1;
+    this.sequence = 1;
   }
 
-  // Inserta un registro “a mano” (para escenarios Given con fechas específicas)
   pushFixed(row: Omit<ImcEntity, 'id'>) {
-    const rec: ImcEntity = { ...row, id: this.id++ };
-    this.data.push(rec);
-    return rec;
+    const entity: ImcEntity = { ...row, id: new ObjectId() };
+    this.data.push(entity);
+    return entity;
   }
 
   async findBy(
@@ -33,9 +34,15 @@ class InMemoryImcRepository implements IImcRepository {
   ): Promise<{ data: ImcEntity[]; total: number }> {
     let rows = [...this.data];
 
-    if (categoria) rows = rows.filter(r => r.categoria === categoria);
-    if (fechaInicio) rows = rows.filter(r => r.fecha >= fechaInicio);
-    if (fechaFin) rows = rows.filter(r => r.fecha <= fechaFin);
+    if (categoria) {
+      rows = rows.filter((row) => row.categoria === categoria);
+    }
+    if (fechaInicio) {
+      rows = rows.filter((row) => row.fecha >= fechaInicio);
+    }
+    if (fechaFin) {
+      rows = rows.filter((row) => row.fecha <= fechaFin);
+    }
 
     rows.sort((a, b) =>
       order === 'ASC'
@@ -48,36 +55,104 @@ class InMemoryImcRepository implements IImcRepository {
     return { data: sliced, total };
   }
 
-  async findById(id: number): Promise<ImcEntity | null> {
-    return this.data.find(r => r.id === id) ?? null;
+  async findById(id: ObjectId): Promise<ImcEntity | null> {
+    return this.data.find((row) => row.id === id) ?? null;
   }
 
-  // Nota: tu service llama create(...) con GuardarImcDto (peso,altura,imc,categoria,fecha)
-  // aunque la interfaz dice CalcularImcDto. Permitimos "any" para compatibilidad.
   async create(data: any): Promise<ImcEntity> {
-    const rec: ImcEntity = {
-      id: this.id++,
+    const entity: ImcEntity = {
+      id: new ObjectId(),
       peso: Number(data.peso),
       altura: Number(data.altura),
       imc: Number(data.imc),
       categoria: data.categoria,
       fecha: data.fecha instanceof Date ? data.fecha : new Date(data.fecha),
-      userId: data.userId ?? null,
     };
-    this.data.push(rec);
-    return rec;
+    this.data.push(entity);
+    return entity;
   }
 
   async update(): Promise<ImcEntity | null> {
-    return null; // no se usa en estos tests
+    return null;
   }
 
   async delete(): Promise<ImcEntity | null> {
-    return null; // no se usa en estos tests
+    return null;
+  }
+
+  async metricsByCategoria(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcMetric[]> {
+    const inRange = this.filterByDate(this.data, fechaInicio, fechaFin);
+    const grouped = new Map<string, ImcEntity[]>();
+
+    for (const row of inRange) {
+      const bucket = grouped.get(row.categoria) ?? [];
+      bucket.push(row);
+      grouped.set(row.categoria, bucket);
+    }
+
+    const metrics: ImcMetric[] = [];
+
+    grouped.forEach((rows, categoria) => {
+      const total = rows.length;
+      const promedio = rows.reduce((acc, row) => acc + Number(row.imc), 0) / total;
+      const variance =
+        total === 0
+          ? null
+          : rows.reduce((acc, row) => {
+              const diff = Number(row.imc) - promedio;
+              return acc + diff * diff;
+            }, 0) / total;
+      metrics.push({
+        categoria,
+        total,
+        promedioImc: Number(promedio.toFixed(2)),
+        variacionImc: variance === null ? null : Number(Math.sqrt(variance).toFixed(2)),
+      });
+    });
+
+    return metrics.sort((a, b) => a.categoria.localeCompare(b.categoria));
+  }
+
+  async pesoMetrics(
+    fechaInicio?: Date,
+    fechaFin?: Date,
+  ): Promise<ImcWeightMetric> {
+    const inRange = this.filterByDate(this.data, fechaInicio, fechaFin);
+    const total = inRange.length;
+    if (!total) {
+      return { total: 0, promedioPeso: null, variacionPeso: null };
+    }
+
+    const promedio = inRange.reduce((acc, row) => acc + Number(row.peso), 0) / total;
+    const variance =
+      inRange.reduce((acc, row) => {
+        const diff = Number(row.peso) - promedio;
+        return acc + diff * diff;
+      }, 0) / total;
+
+    return {
+      total,
+      promedioPeso: Number(promedio.toFixed(2)),
+      variacionPeso: Number(Math.sqrt(variance).toFixed(2)),
+    };
+  }
+
+  private filterByDate(rows: ImcEntity[], fechaInicio?: Date, fechaFin?: Date): ImcEntity[] {
+    return rows.filter((row) => {
+      if (fechaInicio && row.fecha < fechaInicio) {
+        return false;
+      }
+      if (fechaFin && row.fecha > fechaFin) {
+        return false;
+      }
+      return true;
+    });
   }
 }
 
-// ---------- Estado de test ----------
 let app: INestApplication;
 let service: ImcService;
 let repo: InMemoryImcRepository;
@@ -88,7 +163,6 @@ let listado: Array<{
   imc: number;
   categoria: string;
   fecha: Date;
-  userId?: string | null;
 }> = [];
 
 setDefaultTimeout(60_000);
@@ -104,7 +178,6 @@ BeforeAll(async () => {
   }).compile();
 
   app = moduleRef.createNestApplication();
-  // Replica tu main.ts
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -113,8 +186,8 @@ BeforeAll(async () => {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  await app.init();
 
+  await app.init();
   service = app.get(ImcService);
 });
 
@@ -122,86 +195,86 @@ AfterAll(async () => {
   await app?.close();
 });
 
-// ---------- Steps ----------
-
 Given('que tengo un almacenamiento de IMC en memoria inicializado', function () {
   repo.clear();
 });
 
 Given('que tengo el servicio de IMC conectado a ese almacenamiento', function () {
-  // no-op (ya está inyectado en BeforeAll)
+  // El servicio ya está conectado al repositorio en memoria
 });
 
 When('calculo IMC para peso {float} y altura {float}', function (peso: number, altura: number) {
-  // Esto persiste vía repo.create(...) dentro del service
   service.calcularImc({ peso, altura } as any);
 });
 
 Then('el historial debe tener {int} registro', async function (n: number) {
-  listado = await service.historial(); // params opcionales
+  listado = (await service.historial()).data;
   expect(listado).toHaveLength(n);
 });
 
-Then(
-  'el último registro debe incluir peso {float}, altura {float}, categoría {string}',
-  async function (p: number, a: number, cat: string) {
-    const rows = await service.historial(0, 100, 'DESC'); // aseguramos orden desc
-    const last = rows[0];
-    expect(last.peso).toBe(p);
-    expect(last.altura).toBe(a);
-    expect(last.categoria).toBe(cat);
-    const esperado = Number((p / (a * a)).toFixed(2));
-    expect(last.imc).toBeCloseTo(esperado, 2);
-  },
-);
+Then('el último registro debe incluir peso {float}, altura {float}, categoría {string}', async function (
+  peso: number,
+  altura: number,
+  categoria: string,
+) {
+  const rows = (await service.historial(0, 100, 'DESC')).data;
+  const last = rows[0];
+  console.log('Último registro:', last);
+  expect(last.peso).toBe(peso);
+  expect(last.altura).toBe(altura);
+  expect(last.categoria).toBe(categoria);
+
+  const esperado = Number((peso / (altura * altura)).toFixed(2));
+  expect(last.imc).toBeCloseTo(esperado, 2);
+});
 
 Then('al listar el historial, el primer registro debe ser el más reciente', async function () {
-  const rows = await service.historial(0, 100, 'DESC');
+  const rows = (await service.historial(0, 100, 'DESC')).data;
   expect(rows.length).toBeGreaterThanOrEqual(2);
   expect(rows[0].fecha.getTime()).toBeGreaterThanOrEqual(rows[1].fecha.getTime());
 });
 
-Given(
-  'que existe un cálculo con fecha {string} con categoria {string} en orden {string}',
-  function (iso: string, cat: string, _ord: string) {
-    // "orden" se usa al listar, no es campo del registro; lo ignoramos acá
-    const fecha = new Date(iso);
-    const peso = 70;
-    const altura = 1.75;
-    repo.pushFixed({
-      peso,
-      altura,
-      imc: Number((peso / (altura ** 2)).toFixed(2)),
-      categoria: cat,
-      fecha,
-      userId: 'Usuario prueba',
-    });
-  },
-);
+Given('que existe un cálculo con fecha {string} con categoria {string} en orden {string}', function (
+  iso: string,
+  categoria: string,
+  _orden: string,
+) {
+  const fecha = new Date(iso);
+  const peso = 70;
+  const altura = 1.75;
+
+  repo.pushFixed({
+    peso,
+    altura,
+    imc: Number((peso / (altura * altura)).toFixed(2)),
+    categoria,
+    fecha,
+  });
+});
 
 Given('que existe un cálculo con fecha {string}', function (iso: string) {
   const fecha = new Date(iso);
   const peso = 80;
   const altura = 1.7;
+
   repo.pushFixed({
     peso,
     altura,
-    imc: Number((peso / (altura ** 2)).toFixed(2)),
+    imc: Number((peso / (altura * altura)).toFixed(2)),
     categoria: 'Normal',
     fecha,
-    // userId: null,
   });
 });
 
 When('pido el historial entre {string} y {string}', async function (fromIso: string, toIso: string) {
-  listado = await service.historial(
+  listado = (await service.historial(
     0,
     100,
-    'ASC',           // pedimos ascendente para facilitar la aserción si quisieras
-    undefined,       // sin filtrar por categoría
+    'ASC',
+    undefined,
     new Date(fromIso),
     new Date(toIso),
-  );
+  )).data;
 });
 
 Then('el historial filtrado debe contener {int} registro', function (n: number) {
@@ -209,6 +282,5 @@ Then('el historial filtrado debe contener {int} registro', function (n: number) 
 });
 
 Then('ese registro debe tener fecha {string}', function (iso: string) {
-  // service.historial devuelve Date real (no JSON), así que comparamos con toISOString()
   expect(listado[0].fecha.toISOString()).toBe(iso);
 });
