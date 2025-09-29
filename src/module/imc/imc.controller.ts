@@ -152,9 +152,11 @@ export class ImcController {
     @Query('categoria') categoria?: string,
     @Query('from', ParseDatePipe) fechaInicio?: Date,
     @Query('to', ParseDatePipe) fechaFin?: Date,
-  ): Promise<ImcRecord[]> {
+  ): Promise<{ data: ImcRecord[]; total: number }> {
 
-    return this.imcService.historial(skip, take, order, categoria, fechaInicio, fechaFin);
+    const { data, total } = await this.imcService.historial(skip, take, order, categoria, fechaInicio, fechaFin);
+
+    return { data, total };
   }
 
   // -------------------------
