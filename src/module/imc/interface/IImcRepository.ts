@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb';
 import { CalcularImcDto } from '../dto/calcular-imc-dto';
 import { UpdateImcDto } from '../dto/update-imc-dto';
 import { ImcEntity } from '../entities/imc.entity';
@@ -13,14 +14,20 @@ export interface IImcRepository {
         fechaInicio?: Date,
         fechaFin?: Date,   
     ): Promise<{ data: ImcEntity[]; total: number }>;
-    findById(id: number): Promise<ImcEntity | null>;
+
+    findById(id: ObjectId): Promise<ImcEntity | null>;
+
     create(data: CalcularImcDto): Promise<ImcEntity>;
-    update(id: number, data: UpdateImcDto): Promise<ImcEntity | null>;
-    delete(id: number): Promise<ImcEntity | null>;
+
+    update(id: ObjectId, data: UpdateImcDto): Promise<ImcEntity | null>;
+
+    delete(id: ObjectId): Promise<ImcEntity | null>;
+
     metricsByCategoria(
         fechaInicio?: Date,
         fechaFin?: Date,
     ): Promise<ImcMetric[]>;
+
     pesoMetrics(
         fechaInicio?: Date,
         fechaFin?: Date,
