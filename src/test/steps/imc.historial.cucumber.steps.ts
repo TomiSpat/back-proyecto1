@@ -7,6 +7,7 @@ import { IImcRepository } from 'src/module/imc/interface/IImcRepository';
 import { ImcEntity } from 'src/module/imc/entities/imc.entity';
 import { ImcMetric } from 'src/module/imc/interface/IImcMetric';
 import { ImcWeightMetric } from 'src/module/imc/interface/IImcWeightMetric';
+import { ObjectId } from 'mongodb';
 
 class InMemoryImcRepository implements IImcRepository {
   private data: ImcEntity[] = [];
@@ -18,7 +19,7 @@ class InMemoryImcRepository implements IImcRepository {
   }
 
   pushFixed(row: Omit<ImcEntity, 'id'>) {
-    const entity: ImcEntity = { ...row, id: this.sequence++ };
+    const entity: ImcEntity = { ...row, id: new ObjectId() };
     this.data.push(entity);
     return entity;
   }
@@ -54,13 +55,13 @@ class InMemoryImcRepository implements IImcRepository {
     return { data: sliced, total };
   }
 
-  async findById(id: number): Promise<ImcEntity | null> {
+  async findById(id: ObjectId): Promise<ImcEntity | null> {
     return this.data.find((row) => row.id === id) ?? null;
   }
 
   async create(data: any): Promise<ImcEntity> {
     const entity: ImcEntity = {
-      id: this.sequence++,
+      id: new ObjectId(),
       peso: Number(data.peso),
       altura: Number(data.altura),
       imc: Number(data.imc),

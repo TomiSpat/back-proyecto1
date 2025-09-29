@@ -1,17 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, BaseEntity } from 'typeorm';
+import { Entity, ObjectIdColumn, Column } from 'typeorm';
+import { ObjectId } from 'mongodb';
 
-@Entity('imc_calculadora')
+@Entity('imcCalculadora')
 export class ImcEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
-  @Column('decimal', { precision: 5, scale: 2 })
+  @Column()
   peso: number;
 
-  @Column('decimal', { precision: 3, scale: 2 })
+  @Column()
   altura: number;
 
-  @Column('decimal', { precision: 5, scale: 2 })
+  @Column()
   imc: number;
 
   @Column()
