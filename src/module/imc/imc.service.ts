@@ -49,9 +49,9 @@ export class ImcService {
     fechaInicio?: Date,
     fechaFin?: Date,
     ) {
-    const { data } = await this.imcRepository.findBy(skip, take, order, categoria, fechaInicio, fechaFin);
-    
-    return data.map(MapperUtil.toImcRecord);
+    const { data, total } = await this.imcRepository.findBy(skip, take, order, categoria, fechaInicio, fechaFin);
+
+    return { data: data.map(MapperUtil.toImcRecord), total };
   }
 
   async metricas(

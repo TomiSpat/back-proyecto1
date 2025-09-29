@@ -207,7 +207,7 @@ When('calculo IMC para peso {float} y altura {float}', function (peso: number, a
 });
 
 Then('el historial debe tener {int} registro', async function (n: number) {
-  listado = await service.historial();
+  listado = (await service.historial()).data;
   expect(listado).toHaveLength(n);
 });
 
@@ -216,8 +216,9 @@ Then('el último registro debe incluir peso {float}, altura {float}, categoría 
   altura: number,
   categoria: string,
 ) {
-  const rows = await service.historial(0, 100, 'DESC');
+  const rows = (await service.historial(0, 100, 'DESC')).data;
   const last = rows[0];
+  console.log('Último registro:', last);
   expect(last.peso).toBe(peso);
   expect(last.altura).toBe(altura);
   expect(last.categoria).toBe(categoria);
@@ -227,7 +228,7 @@ Then('el último registro debe incluir peso {float}, altura {float}, categoría 
 });
 
 Then('al listar el historial, el primer registro debe ser el más reciente', async function () {
-  const rows = await service.historial(0, 100, 'DESC');
+  const rows = (await service.historial(0, 100, 'DESC')).data;
   expect(rows.length).toBeGreaterThanOrEqual(2);
   expect(rows[0].fecha.getTime()).toBeGreaterThanOrEqual(rows[1].fecha.getTime());
 });
@@ -265,14 +266,14 @@ Given('que existe un cálculo con fecha {string}', function (iso: string) {
 });
 
 When('pido el historial entre {string} y {string}', async function (fromIso: string, toIso: string) {
-  listado = await service.historial(
+  listado = (await service.historial(
     0,
     100,
     'ASC',
     undefined,
     new Date(fromIso),
     new Date(toIso),
-  );
+  )).data;
 });
 
 Then('el historial filtrado debe contener {int} registro', function (n: number) {
